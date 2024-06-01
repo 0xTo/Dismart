@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Réservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #products {
+            display: flex;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .product {
+            flex: 1 0 200px;
+            max-width: 200px;
+            height: 200px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            transition: 0.3s;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product:hover {
+            box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .product.open {
+            height: auto;
+        }
+
+        .product .product-id {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .product form {
+            position: absolute;
+            bottom: -50px;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            padding: 10px;
+            box-sizing: border-box;
+            transition: 0.3s;
+            transform: translateY(100%);
+        }
+
+        .product.open form {
+            bottom: 0;
+            transform: translateY(0);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Ajouter des styles pour la fenêtre modale */
+
+        #modal-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        #modal-background.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #modal {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 80%;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        #close-modal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: black;
+        }
+
+        #qr-code {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Réservation</h1>
+
+    <div id="products">
+        <div class="product" data-product-id="1">
+            <div class="product-id">Produit 1</div>
+            <form>
+                <label for="quantity-1">Quantité : </label>
+                <input type="range" id="quantity-1" name="quantity" min="1" max="9" value="1" required><br>
+                <output id="quantity-output-1">1</output><br>
+                <button type="submit">Réserver</button>
+            </form>
+        </div>
+
+        <div class="product" data-product-id="2">
+            <div class="product-id">Produit 2</div>
+            <form>
+                <label for="quantity-2">Quantité : </label>
+                <input type="range" id="quantity-2" name="quantity" min="1" max="9" value="1" required><br>
+                <output id="quantity-output-2">1</output><br>
+                <button type="submit">Réserver</button>
+            </form>
+        </div>
+
+        <div class="product" data-product-id="3">
+            <div class="product-id">Produit 3</div>
+            <form>
+                <label for="quantity-3">Quantité : </label>
+                <input type="range" id="quantity-3" name="quantity" min="1" max="9" value="1" required><br>
+                <output id="quantity-output-3">1</output><br>
+                <button type="submit">Réserver</button>
+            </form>
+        </div>
+
+        <div class="product" data-product-id="4">
+            <div class="product-id">Produit 4</div>
+            <form>
+                <label for="quantity-4">Quantité : </label>
+                <input type="range" id="quantity-4" name="quantity" min="1" max="9" value="1" required><br>
+                <output id="quantity-output-4">1</output><br>
+                <button type="submit">Réserver</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ajouter un élément div pour le fond flou de la fenêtre modale -->
+    <div id="modal-background" class="hidden">
+        <!-- Ajouter un élément div pour la fenêtre modale -->
+        <div id="modal">
+            <!-- Ajouter un élément button pour fermer la fenêtre modale -->
+            <button id="close-modal" type="button">X</button>
+            <!-- Ajouter un élément img pour afficher le QR code -->
+            <img id="qr-code" src="" alt="QR code">
+            <!-- Ajouter un élément div pour afficher les informations de la réservation -->
+            <div id="reservation-info">
+                <h2>Réservation effectuée</h2>
+                <p>ID de la réservation : <span id="reservation-id"></span></p>
+                <p>Produit : <span id="product-name"></span></p>
+                <p>Quantité : <span id="product-quantity"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const products = document.querySelectorAll('.product');
+
+        products.forEach(product => {
+            product.addEventListener('click', () => {
+                // Fermer tous les autres formulaires
+                const openedProduct = document.querySelector('.product.open');
+                if (openedProduct && openedProduct !== product) {
+                    openedProduct.classList.remove('open');
+                }
+
+                // Ouvrir le formulaire dans le produit cliqué
+                product.classList.add('open');
+
+                // Sélectionner le slider et l'output dans le produit cliqué
+                const productId = product.dataset.productId;
+                const slider = product.querySelector(`#quantity-${productId}`);
+                const output = product.querySelector(`#quantity-output-${productId}`);
+
+                // Ajouter un écouteur d'événement au slider
+                slider.addEventListener('input', () => {
+                    output.textContent = slider.value;
+                });
+
+                // Ajouter un écouteur d'événement au formulaire
+                const form = product.querySelector('form');
+                form.addEventListener('submit', async event => {
+                    event.preventDefault();
+
+                    // Fermer le formulaire
+                    product.classList.remove('open');
+
+                    // Envoyer la requête POST au serveur
+                    const response = await fetch('/reservation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            product_id: productId,
+                            quantity: slider.value
+                        })
+                    });
+
+                    // Vérifier si la réponse est OK
+                    if (response.ok) {
+                        // Extraire les données de la réponse
+                        const data = await response.json();
+
+                        // Mettre à jour les éléments de la fenêtre modale
+                        const reservationIdElement = document.querySelector('#reservation-id');
+                        const productNameElement = document.querySelector('#product-name');
+                        const productQuantityElement = document.querySelector('#product-quantity');
+                        const qrCodeElement = document.querySelector('#qr-code');
+                        reservationIdElement.textContent = data.reservation_id;
+                        productNameElement.textContent = `Produit ${productId}`;
+                        productQuantityElement.textContent = slider.value;
+                        qrCodeElement.src = `/static/qr_codes/${data.reservation_id}.png`;
+
+                        // Afficher la fenêtre modale
+                        const modalBackground = document.querySelector('#modal-background');
+                        modalBackground.classList.remove('hidden');
+                        modalBackground.classList.add('show');
+                    } else {
+                        console.error(response.statusText);
+                    }
+                });
+            });
+        });
+
+        // Ajouter un écouteur d'événement au bouton de fermeture de la fenêtre modale
+        const closeModalButton = document.querySelector('#close-modal');
+        closeModalButton.addEventListener('click', () => {
+            const modalBackground = document.querySelector('#modal-background');
+            modalBackground.classList.remove('show');
+            modalBackground.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
